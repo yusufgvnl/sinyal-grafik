@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kripto Sinyal Grafiği</title>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    #chart {
+      width: 100%;
+      height: 600px;
+    }
+    #form {
+      margin: 20px 0;
+    }
+    input, button {
+      padding: 8px;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Telegram Sinyalleri ile Kripto Grafik</h2>
+
+  <div id="form">
+    <input id="pair" placeholder="Pair (ör: BTC/USDT)" />
+    <input id="entry" type="number" placeholder="Entry" />
+    <input id="tp" type="number" placeholder="Take Profit" />
+    <input id="sl" type="number" placeholder="Stop Loss" />
+    <button onclick="ekleSinyal()">Sinyali Ekle</button>
+  </div>
+
+  <div id="chart"></div>
+
+  <script>
+    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+      layout: {
+        background: { color: '#ffffff' },
+        textColor: '#000'
+      },
+      grid: {
+        vertLines: { color: '#eee' },
+        horzLines: { color: '#eee' }
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+      }
+    });
+
+    const candleSeries = chart.addCandlestickSeries();
+
+    fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1&interval=hourly')
+      .then(res => res.json())
+      .then(data => {
+        const candles = data.prices.map((price, index) => {
+          const time = Math.floor(price[0] / 1000);
+          const open = price[1];
+          const high = open * 1.01;
+          const low = open * 0.99;
+          const close = open * (Math.random() > 0.5 ? 1.01 : 0.99);
+          return { time, open, high, low, close };
+        });
+        candleSeries.setData(candles);
+      });
+
+    function ekleSinyal() {
+      const pair = document.getElementById('pair').value;
+      const entry = parseFloat(document.getElementById('entry').value);
+      const tp = parseFloat(document.getElementById('tp').value);
+      const sl = parseFloat(document.getElementById('sl').value);
+
+      const time = Math.floor(Date.now() / 1000); // Anlık zaman
+      const later = time + 60 * 60; // 1 saat ileri
+
+      chart.addLineSeries({ color: 'green', lineWidth: 1 }).setData([
+        { time, value: tp },
+        { time: later, value: tp }
+      ]);
+
+      chart.addLineSeries({ color: 'red', lineWidth: 1 }).setData([
+        { time, value: sl },
+        { time: later, value: sl }
+      ]);
+
+      chart.addLineSeries({ color: 'blue', lineWidth: 2 }).setData([
+        { time, value: entry },
+        { time: later, value: entry }
+      ]);
+    }
+  </script>
+</body>
+</html>
