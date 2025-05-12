@@ -64,30 +64,35 @@
         candleSeries.setData(candles);
       });
 
-    function ekleSinyal() {
-      const pair = document.getElementById('pair').value;
-      const entry = parseFloat(document.getElementById('entry').value);
-      const tp = parseFloat(document.getElementById('tp').value);
-      const sl = parseFloat(document.getElementById('sl').value);
+function ekleSinyal() {
+  const pair = document.getElementById('pair').value.trim();
+  const entry = parseFloat(document.getElementById('entry').value);
+  const tp = parseFloat(document.getElementById('tp').value);
+  const sl = parseFloat(document.getElementById('sl').value);
 
-      const time = Math.floor(Date.now() / 1000); // Anlık zaman
-      const later = time + 60 * 60; // 1 saat ileri
+  if (!pair || isNaN(entry) || isNaN(tp) || isNaN(sl)) {
+    alert("Lütfen tüm alanları doğru şekilde doldurun!");
+    return;
+  }
 
-      chart.addLineSeries({ color: 'green', lineWidth: 1 }).setData([
-        { time, value: tp },
-        { time: later, value: tp }
-      ]);
+  const time = Math.floor(Date.now() / 1000);
+  const later = time + 60 * 60;
 
-      chart.addLineSeries({ color: 'red', lineWidth: 1 }).setData([
-        { time, value: sl },
-        { time: later, value: sl }
-      ]);
+  chart.addLineSeries({ color: 'green', lineWidth: 1 }).setData([
+    { time, value: tp },
+    { time: later, value: tp }
+  ]);
 
-      chart.addLineSeries({ color: 'blue', lineWidth: 2 }).setData([
-        { time, value: entry },
-        { time: later, value: entry }
-      ]);
-    }
+  chart.addLineSeries({ color: 'red', lineWidth: 1 }).setData([
+    { time, value: sl },
+    { time: later, value: sl }
+  ]);
+
+  chart.addLineSeries({ color: 'blue', lineWidth: 2 }).setData([
+    { time, value: entry },
+    { time: later, value: entry }
+  ]);
+}
   </script>
 </body>
 </html>
