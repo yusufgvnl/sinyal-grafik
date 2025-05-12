@@ -1,39 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kripto Sinyal Grafiği</title>
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
     #chart {
       width: 100%;
       height: 600px;
+      margin-bottom: 20px;
     }
-    #form {
-      margin: 20px 0;
-    }
-    input, button {
-      padding: 8px;
-      margin-right: 5px;
+    #form input, #form button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
   <h2>Telegram Sinyalleri ile Kripto Grafik</h2>
+  <div id="chart"></div>
 
   <div id="form">
-    <input id="pair" placeholder="Pair (ör: BTC/USDT)" />
-    <input id="entry" type="number" placeholder="Entry" />
-    <input id="tp" type="number" placeholder="Take Profit" />
-    <input id="sl" type="number" placeholder="Stop Loss" />
+    <input id="pair" placeholder="Pair (ör: BTC/USDT)">
+    <input id="entry" type="number" placeholder="Entry">
+    <input id="tp" type="number" placeholder="Take Profit">
+    <input id="sl" type="number" placeholder="Stop Loss">
     <button onclick="ekleSinyal()">Sinyali Ekle</button>
   </div>
 
-  <div id="chart"></div>
-
   <script>
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+      width: document.getElementById('chart').clientWidth,
+      height: 600,
       layout: {
         background: { color: '#ffffff' },
         textColor: '#000'
@@ -53,46 +58,49 @@
     fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1&interval=hourly')
       .then(res => res.json())
       .then(data => {
-        const candles = data.prices.map((price, index) => {
+        const candles = data.prices.map((price, i) => {
           const time = Math.floor(price[0] / 1000);
-          const open = price[1];
-          const high = open * 1.01;
-          const low = open * 0.99;
-          const close = open * (Math.random() > 0.5 ? 1.01 : 0.99);
-          return { time, open, high, low, close };
+          const value = price[1];
+          return {
+            time,
+            open: value * 0.98,
+            high: value * 1.02,
+            low: value * 0.96,
+            close: value * 1.01
+          };
         });
         candleSeries.setData(candles);
       });
 
-function ekleSinyal() {
-  const pair = document.getElementById('pair').value.trim();
-  const entry = parseFloat(document.getElementById('entry').value);
-  const tp = parseFloat(document.getElementById('tp').value);
-  const sl = parseFloat(document.getElementById('sl').value);
+    function ekleSinyal() {
+      const pair = document.getElementById('pair').value.trim();
+      const entry = parseFloat(document.getElementById('entry').value);
+      const tp = parseFloat(document.getElementById('tp').value);
+      const sl = parseFloat(document.getElementById('sl').value);
 
-  if (!pair || isNaN(entry) || isNaN(tp) || isNaN(sl)) {
-    alert("Lütfen tüm alanları doğru şekilde doldurun!");
-    return;
-  }
+      if (!pair || isNaN(entry) || isNaN(tp) || isNaN(sl)) {
+        alert("Lütfen tüm alanları doğru girin.");
+        return;
+      }
 
-  const time = Math.floor(Date.now() / 1000);
-  const later = time + 60 * 60;
+      const now = Math.floor(Date.now() / 1000);
+      const later = now + 3600; // 1 saat sonra
 
-  chart.addLineSeries({ color: 'green', lineWidth: 1 }).setData([
-    { time, value: tp },
-    { time: later, value: tp }
-  ]);
+      chart.addLineSeries({ color: 'blue', lineWidth: 2 }).setData([
+        { time: now, value: entry },
+        { time: later, value: entry }
+      ]);
 
-  chart.addLineSeries({ color: 'red', lineWidth: 1 }).setData([
-    { time, value: sl },
-    { time: later, value: sl }
-  ]);
+      chart.addLineSeries({ color: 'green', lineWidth: 1 }).setData([
+        { time: now, value: tp },
+        { time: later, value: tp }
+      ]);
 
-  chart.addLineSeries({ color: 'blue', lineWidth: 2 }).setData([
-    { time, value: entry },
-    { time: later, value: entry }
-  ]);
-}
+      chart.addLineSeries({ color: 'red', lineWidth: 1 }).setData([
+        { time: now, value: sl },
+        { time: later, value: sl }
+      ]);
+    }
   </script>
 </body>
 </html>
