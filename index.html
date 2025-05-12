@@ -59,12 +59,29 @@
     let candleSeries = chart.addCandlestickSeries();
     let ws;
 
+    async function loadHistoricalCandles(interval) {
+      const limit = 100;
+      const intervalMap = { '15m': '15m', '1h': '1h' };
+      const binanceInterval = intervalMap[interval];
+      const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${binanceInterval}&limit=${limit}`);
+      const data = await response.json();
+
+      const formattedData = data.map(candle => ({
+        time: candle[0] / 1000,
+        open: parseFloat(candle[1]),
+        high: parseFloat(candle[2]),
+        low: parseFloat(candle[3]),
+        close: parseFloat(candle[4])
+      }));
+
+      candleSeries.setData(formattedData);
+    }
+
     function startLiveFeed(interval) {
       if (ws) ws.close();
 
-      candleSeries.setData([]);
-
-      const streamName = `btcusdt@kline_${interval}`;
+      const intervalMap = { '15m': '15m', '1h': '1h' };
+      const streamName = `btcusdt@kline_${intervalMap[interval]}`;
       ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streamName}`);
 
       ws.onmessage = event => {
@@ -83,40 +100,12 @@
       };
     }
 
-    // Varsayılan 15 dakikalık grafik
-    startLiveFeed("15m");
+    // Başlangıçta 15m verisi yükle
+    (async () => {
+      await loadHistoricalCandles("15m");
+      startLiveFeed("15m");
+    })();
 
     function ekleSinyal() {
       const interval = document.getElementById('interval').value;
-      const entry = parseFloat(document.getElementById('entry').value);
-      const tp = parseFloat(document.getElementById('tp').value);
-      const sl = parseFloat(document.getElementById('sl').value);
-
-      if (isNaN(entry) || isNaN(tp) || isNaN(sl)) {
-        alert("Lütfen tüm alanları doğru girin.");
-        return;
-      }
-
-      startLiveFeed(interval);
-
-      const now = Math.floor(Date.now() / 1000);
-      const later = now + (interval === '15m' ? 900 : 3600);
-
-      chart.addLineSeries({ color: 'blue', lineWidth: 2 }).setData([
-        { time: now, value: entry },
-        { time: later, value: entry }
-      ]);
-
-      chart.addLineSeries({ color: 'green', lineWidth: 1 }).setData([
-        { time: now, value: tp },
-        { time: later, value: tp }
-      ]);
-
-      chart.addLineSeries({ color: 'red', lineWidth: 1 }).setData([
-        { time: now, value: sl },
-        { time: later, value: sl }
-      ]);
-    }
-  </script>
-</body>
-</html>
+      const entry = parseFloat(document.getElementById('e
