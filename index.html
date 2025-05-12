@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kripto Sinyal Grafiği</title>
+  <title>Canlı Kripto Sinyal Grafiği</title>
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     body {
@@ -24,7 +24,7 @@
   </style>
 </head>
 <body>
-  <h2>Telegram Sinyalleri ile Kripto Grafik</h2>
+  <h2>Canlı Kripto Grafik + Telegram Sinyal Çizimi</h2>
   <div id="chart"></div>
 
   <div id="form">
@@ -49,52 +49,39 @@
       },
       timeScale: {
         timeVisible: true,
-        secondsVisible: false,
+        secondsVisible: true,
       }
     });
 
     let candleSeries = chart.addCandlestickSeries();
 
-    const coinMap = {
-      'BTC': 'bitcoin',
-      'ETH': 'ethereum',
-      'SOL': 'solana',
-      'BNB': 'binancecoin',
-      'AVAX': 'avalanche-2',
-      'XRP': 'ripple',
-      'DOGE': 'dogecoin',
-      'ADA': 'cardano'
-    };
+    let ws;
+    let currentSymbol = "btcusdt"; // default
 
-    function getSymbolId(pair) {
-      const symbol = pair.toUpperCase().split("/")[0];
-      return coinMap[symbol] || 'bitcoin'; // default to BTC if not found
+    function startLiveFeed(symbol) {
+      if (ws) ws.close();
+
+      candleSeries.setData([]);
+
+      ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@kline_1m`);
+      ws.onmessage = event => {
+        const message = JSON.parse(event.data);
+        const candlestick = message.k;
+
+        const bar = {
+          time: candlestick.t / 1000,
+          open: parseFloat(candlestick.o),
+          high: parseFloat(candlestick.h),
+          low: parseFloat(candlestick.l),
+          close: parseFloat(candlestick.c)
+        };
+
+        candleSeries.update(bar);
+      };
     }
 
-    function loadChartForPair(pair) {
-      const coinId = getSymbolId(pair);
-
-      fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=1&interval=hourly`)
-        .then(res => res.json())
-        .then(data => {
-          const candles = data.prices.map((price, i) => {
-            const time = Math.floor(price[0] / 1000);
-            const value = price[1];
-            return {
-              time,
-              open: value * 0.98,
-              high: value * 1.02,
-              low: value * 0.96,
-              close: value * 1.01
-            };
-          });
-
-          candleSeries.setData(candles);
-        });
-    }
-
-    // Başlangıçta BTC grafiğini yükle
-    loadChartForPair("BTC/USDT");
+    // Başlangıçta BTC/USDT başlat
+    startLiveFeed(currentSymbol);
 
     function ekleSinyal() {
       const pair = document.getElementById('pair').value.trim();
@@ -107,7 +94,9 @@
         return;
       }
 
-      loadChartForPair(pair);
+      const symbol = pair.toLowerCase().replace("/", "");
+      currentSymbol = symbol;
+      startLiveFeed(symbol);
 
       const now = Math.floor(Date.now() / 1000);
       const later = now + 3600; // 1 saat sonra
