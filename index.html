@@ -16,7 +16,7 @@
       height: 600px;
       margin-bottom: 20px;
     }
-    #form input, #form button {
+    #form input, #form button, #form select {
       padding: 10px;
       margin: 5px;
       font-size: 14px;
@@ -24,11 +24,14 @@
   </style>
 </head>
 <body>
-  <h2>Canlı Kripto Grafik + Telegram Sinyal Çizimi</h2>
+  <h2>Canlı Kripto Grafik (BTC/USDT - 15dk ve 1sa) + Telegram Sinyal Çizimi</h2>
   <div id="chart"></div>
 
   <div id="form">
-    <input id="pair" placeholder="Pair (ör: BTC/USDT)">
+    <select id="interval">
+      <option value="15m">15 Dakika</option>
+      <option value="1h">1 Saat</option>
+    </select>
     <input id="entry" type="number" placeholder="Entry">
     <input id="tp" type="number" placeholder="Take Profit">
     <input id="sl" type="number" placeholder="Stop Loss">
@@ -49,21 +52,21 @@
       },
       timeScale: {
         timeVisible: true,
-        secondsVisible: true,
+        secondsVisible: false,
       }
     });
 
     let candleSeries = chart.addCandlestickSeries();
-
     let ws;
-    let currentSymbol = "btcusdt"; // default
 
-    function startLiveFeed(symbol) {
+    function startLiveFeed(interval) {
       if (ws) ws.close();
 
       candleSeries.setData([]);
 
-      ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@kline_1m`);
+      const streamName = `btcusdt@kline_${interval}`;
+      ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streamName}`);
+
       ws.onmessage = event => {
         const message = JSON.parse(event.data);
         const candlestick = message.k;
@@ -80,26 +83,24 @@
       };
     }
 
-    // Başlangıçta BTC/USDT başlat
-    startLiveFeed(currentSymbol);
+    // Varsayılan 15 dakikalık grafik
+    startLiveFeed("15m");
 
     function ekleSinyal() {
-      const pair = document.getElementById('pair').value.trim();
+      const interval = document.getElementById('interval').value;
       const entry = parseFloat(document.getElementById('entry').value);
       const tp = parseFloat(document.getElementById('tp').value);
       const sl = parseFloat(document.getElementById('sl').value);
 
-      if (!pair || isNaN(entry) || isNaN(tp) || isNaN(sl)) {
+      if (isNaN(entry) || isNaN(tp) || isNaN(sl)) {
         alert("Lütfen tüm alanları doğru girin.");
         return;
       }
 
-      const symbol = pair.toLowerCase().replace("/", "");
-      currentSymbol = symbol;
-      startLiveFeed(symbol);
+      startLiveFeed(interval);
 
       const now = Math.floor(Date.now() / 1000);
-      const later = now + 3600; // 1 saat sonra
+      const later = now + (interval === '15m' ? 900 : 3600);
 
       chart.addLineSeries({ color: 'blue', lineWidth: 2 }).setData([
         { time: now, value: entry },
